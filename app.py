@@ -145,6 +145,12 @@ def add_photo():
     photo["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
     photo["url"] = "~/" + photo["photoId"] + ".jpg"
     photo["oridinal"] = len(current_user["photos"])
+
+    upload = request.files.get('file')
+    if upload:
+        file_path = f"./storage/{photo['photoId']}.jpg"
+        upload.save(file_path)
+
     current_user["photos"].append(photo)
     users.append(current_user)
     return photo
