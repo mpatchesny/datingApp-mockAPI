@@ -99,10 +99,7 @@ def generate_random_match(user1, user2):
 def generate_random_photo(oridinal, sex):
     d = {}
     d["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
-    if str(sex) == "1":
-        d["url"] = "~/storage/male.jpg"
-    elif str(sex) == "2":
-        d["url"] = "~/storage/female.jpg"
+    d["url"] = f'~/storage/{d["photoId"]}.jpg'
     d["oridinal"] = oridinal
     return d
 
