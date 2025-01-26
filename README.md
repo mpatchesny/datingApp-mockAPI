@@ -1,6 +1,6 @@
 # datingApp-mockAPI
 
-A mock API backend for datingApp.
+A mock API backend for [DatingApp](https://github.com/mpatchesny/datingApp).
 
 It provides all the basic endpoints and mimics the actual backend behaviour in a very limited way (almost no data validation, etc.).
 
