@@ -313,7 +313,7 @@ def pass_user(userId):
 def serve_static(filename):
     file_path = f"./storage/{filename}"
     if not os.path.exists(file_path):
-        response = requests.get("https://thispersondoesnotexist.com/image")
+        response = requests.get("https://thispersondoesnotexist.com")
         if response.status_code == 200:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
