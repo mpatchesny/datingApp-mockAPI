@@ -96,10 +96,13 @@ def generate_random_match(user1, user2):
     d["createdAt"] = random_datetime().isoformat()
     return d
 
-def generate_random_photo(oridinal):
+def generate_random_photo(oridinal, sex):
     d = {}
     d["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
-    d["url"] = "~/" + d["photoId"] + ".jpg"
+    if str(sex) == "1":
+        d["url"] = "~/male.jpg"
+    elif str(sex) == "2":
+        d["url"] = "~/female.jpg"
     d["oridinal"] = oridinal
     return d
 
