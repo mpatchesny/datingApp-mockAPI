@@ -5,6 +5,7 @@ from bottle import Bottle, run, request, HTTPResponse
 
 from generator import generate
 import datetime
+from bottle import static_file
 
 app = Bottle()
 
@@ -300,12 +301,17 @@ def pass_user(userId):
     swipes.append(swipe)
     return { "isLikedByOtherUser": False }
 
+@app.route('/storage/<filename:path>')
+def serve_static(filename):
+    return static_file(filename, root='./storage')
+
 def __search(list, field_name, value):
     found = []
     for item in list:
         if item[field_name] == value:
             found.append(item)
     return found
+
 
 if __name__ == '__main__':
     users, matches, swipes = generate(1000, 200)
