@@ -141,18 +141,22 @@ def get_recommendations():
 @app.route('/users/me/photos', 'POST')
 @isAuthorized
 def add_photo():
-    if current_user in users:
-        users.remove(current_user)
-    photo = {}
-    photo["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
-    photo["url"] = "~/" + photo["photoId"] + ".jpg"
-    photo["oridinal"] = len(current_user["photos"])
-
     upload = request.files.get('file')
+    mimetype = upload.content_type
+    extension = mimetype.split('/')[-1]
+    if extension not in ['jpeg', 'jpg', 'png', 'bmp']:
+        return HTTPResponse(status=400, body="Unsupported file type")
     if upload:
-        file_path = f"./storage/{photo['photoId']}.jpg"
+        file_path = f"./storage/{photo['photoId']}." + extension
         upload.save(file_path)
 
+    if current_user in users:
+        users.remove(current_user)
+
+    photo = {}
+    photo["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+    photo["url"] = "~/storage/" + photo["photoId"] + "." + extension
+    photo["oridinal"] = len(current_user["photos"])
     current_user["photos"].append(photo)
     users.append(current_user)
     return photo
