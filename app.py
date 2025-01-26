@@ -176,6 +176,9 @@ def delete_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
     if found != []:
         current_user["photos"].remove(found[0])
+        path = './' + found[0].url.strip("~/")
+        if os.path.exists(path):
+            os.remove(path)
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
@@ -333,4 +336,6 @@ if __name__ == '__main__':
     globals()["matches"] = matches
     globals()["swipes"] = swipes
     globals()["current_user"] = None
+    if not os.path.exists('./storage'):
+        os.mkdir('./storage')
     run(app, host='localhost', port=8080)
