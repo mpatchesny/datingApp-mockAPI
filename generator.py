@@ -100,9 +100,9 @@ def generate_random_photo(oridinal, sex):
     d = {}
     d["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
     if str(sex) == "1":
-        d["url"] = "~/male.jpg"
+        d["url"] = "~/storage/male.jpg"
     elif str(sex) == "2":
-        d["url"] = "~/female.jpg"
+        d["url"] = "~/storage/female.jpg"
     d["oridinal"] = oridinal
     return d
 
