@@ -131,7 +131,7 @@ def generate_random_user():
     d["sex"] = random.choice([1, 2])
     photos = []
     for i in range(0, random.randrange(0, 6)):
-        photos.append(generate_random_photo(i+1))
+        photos.append(generate_random_photo(i+1, d["sex"]))
     d["photos"] = photos
     d["distanceInKms"] = random.randrange(0, 250)
     dob = random_date()
