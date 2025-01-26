@@ -1,11 +1,13 @@
+import os
 import json
 import random
+import requests
+import datetime
 
 from bottle import Bottle, run, request, HTTPResponse
+from bottle import static_file
 
 from generator import generate
-import datetime
-from bottle import static_file
 
 app = Bottle()
 
@@ -309,6 +311,12 @@ def pass_user(userId):
 
 @app.route('/storage/<filename:path>')
 def serve_static(filename):
+    file_path = f"./storage/{filename}"
+    if not os.path.exists(file_path):
+        response = requests.get("https://thispersondoesnotexist.com/image")
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
     return static_file(filename, root='./storage')
 
 def __search(list, field_name, value):
