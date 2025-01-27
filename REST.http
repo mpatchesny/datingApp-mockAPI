@@ -1,0 +1,218 @@
+@url = http://localhost:8080
+
+OPTIONS {{url}}/users/auth
+Origin: http://localhost:4200
+Referer: http://localhost:4200
+Access-Control-Request-Method: POST
+
+###
+GET {{url}}/api
+###
+
+### USERS ###
+
+### Create user
+POST {{url}}/users
+Content-Type: application/json
+
+{
+    "phone": "123456789",
+    "email": "test@test.com",
+    "name": "Some name",
+    "dateOfBirth": "1990-01-01",
+    "sex": 1,
+    "preferredSex": 2,
+    "job": "Some job I work at (optional)",
+    "bio": "Some bio (optional)"
+}
+
+### Request access code
+### For now, access code is retuned as a response to this call
+# @name auth
+POST {{url}}/users/auth
+Content-Type: application/json
+
+{
+    "email": "test@test.com"
+}
+###
+@accessCode = {{auth.response.body.$.code}}
+
+### Sign in with acquired access code
+# @name sign_in
+POST {{url}}/users/sign-in
+Content-Type: application/json
+
+{
+    "email": "test@test.com",
+    "accessCode": "{{accessCode}}"
+}
+###
+@accessToken = {{sign_in.response.body.$.accessToken.token}}
+@refreshToken =  {{sign_in.response.body.$.refreshToken.token}}
+
+### Get new token
+# @name refresh-token
+POST {{url}}/users/auth/refresh
+Content-Type: application/json
+
+{
+    "refreshToken": "{{refreshToken}}"
+}
+###
+
+### Get full information about your profile
+# @name get_me
+GET {{url}}/users/me
+Authorization: Bearer {{accessToken}}
+
+@myUserId = {{get_me.response.body.id}}
+
+### Get profiles to swipe
+GET {{url}}/users/me/recommendations
+Authorization: Bearer {{accessToken}}
+
+### Get information about new matches and messages since given last activity time
+GET {{url}}/users/me/updates?lastActivityTime={{$datetime iso8601 -15 d}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### Get information about another user
+@otherUserId = user_l2bczrzdwa
+GET {{url}}/users/{{otherUserId}}
+Authorization: Bearer {{accessToken}}
+
+### Update your profile information
+PATCH {{url}}/users/{{myUserId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "job": "Some another job",
+    "bio": "Some another bio",
+    "dateOfBirth": "1990-01-02",
+    "preferredSex": 2,
+    "preferredMaxDistance": 40,
+    "preferredAgeFrom": 18,
+    "preferredAgeTo": 45,
+    "lat": 50.3719424,
+    "lon": 16.6143541
+}
+###
+
+### Delete account
+DELETE {{url}}/users/{{myUserId}}
+Authorization: Bearer {{accessToken}}
+
+### PHOTOS ###
+@photo = c63d92d0-d758-460e-a95b-4648e4654d2a.jpg
+@photoId = 00000000-0000-0000-0000-000000000001
+
+### Get information about a single photo
+GET {{url}}/photos/{{photoId}}
+Authorization: Bearer {{accessToken}}
+
+### Update photo's oridinal number
+PATCH {{url}}/photos/{{photoId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "newOridinal": 0
+}
+###
+
+### Delete photo
+DELETE {{url}}/photos/{{photoId}}
+Authorization: Bearer {{accessToken}}
+
+### Get photo's base64 encoded binary
+GET {{url}}/storage/{{photo}}
+Authorization: Bearer {{accessToken}}
+
+### MATCHES ###
+
+### Get information about logged user's matches
+@matchId = 00000000-0000-0000-0000-000000000001
+@messageId = 00000000-0000-0000-0000-000000000001
+
+GET {{url}}/matches
+Authorization: Bearer {{accessToken}}
+
+### Get information about a single match
+GET {{url}}/matches/{{matchId}}
+Authorization: Bearer {{accessToken}}
+
+### Mark match as displayed
+PATCH {{url}}/matches/{{matchId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "DisplayedByUserId": "{{myUserId}}"
+}
+###
+
+### Get messages for a given match
+GET {{url}}/matches/{{matchId}}/messages
+Authorization: Bearer {{accessToken}}
+
+### Get information about a single message
+GET {{url}}/matches/{{matchId}}/messages/{{messageId}}
+Authorization: Bearer {{accessToken}}
+
+### Send message to a given match
+### Messages can be send only within a match
+### A match is only created when two users like each others' profiles
+POST {{url}}/matches/{{matchId}}/messages
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "text": "hello"
+}
+###
+
+### Mark message as displayed
+### As a result all messages older than given message will be marked as displayed
+PATCH {{url}}/matches/{{matchId}}/messages/{{messageId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "DisplayedByUserId": "{{myUserId}}"
+}
+###
+
+### Delete match
+### As a result all messages within match will be deleted
+DELETE {{url}}/matches/{{matchId}}
+Authorization: Bearer {{accessToken}}
+
+### SWIPES ###
+
+### Like another user
+PUT {{url}}/like/{{otherUserId}}
+Authorization: Bearer {{accessToken}}
+
+### Pass another user
+PUT {{url}}/pass/{{otherUserId}}
+Authorization: Bearer {{accessToken}}
+
+### UPLOAD PHOTO ###
+POST {{url}}/me/photos
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="text"
+
+title
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="image.png"
+Content-Type: image/png
+
+< ./image.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+
