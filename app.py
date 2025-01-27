@@ -319,8 +319,8 @@ def like_user(userId):
 
     match = {}
     match["matchId"] = "match_" + __get_random_id()
-    match["user"] = current_user["userId"]
-    match["user1"] = userId
+    match["user"] = current_user
+    match["user1"] = __search(users, "userId", userId)[0]
     match["messages"] = []
     match["createdAt"] = datetime.now().isoformat()
     matches.append(match)
@@ -386,17 +386,16 @@ def __load_data():
     return users, matches, swipes, tokens
 
 def __dump():
-    return
     if not os.path.exists('./data'):
         os.mkdir('./data')
     with open('./data/users.json', 'w', encoding='utf-8') as f:
-        json.dump(f, users)
+        json.dump(users, f)
     with open('./data/matches.json', 'w', encoding='utf-8') as f:
-        json.dump(f, matches)
+        json.dump(matches, f)
     with open('./data/swipes.json', 'w', encoding='utf-8') as f:
-        json.dump(f, swipes)
+        json.dump(swipes, f)
     with open('./data/tokens.json', 'w', encoding='utf-8') as f:
-        json.dump(f, tokens)
+        json.dump(tokens, f)
 
 if __name__ == '__main__':
     users, matches, swipes, tokens = __load_data()
