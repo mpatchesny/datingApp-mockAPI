@@ -167,26 +167,28 @@ def get_recommendations():
 @isAuthorized
 def add_photo():
     upload = request.files.get('file')
-    mimetype = upload.content_type
-    extension = mimetype.split('/')[-1]
-    photoId = "photo_" + __get_random_id()
-
-    if extension not in ['jpeg', 'jpg', 'png', 'bmp']:
-        return HTTPResponse(status=400, body="Unsupported file type")
     if upload:
-        file_path = f"./storage/{photoId}." + extension
-        upload.save(file_path)
+        mimetype = upload.content_type
+        extension = mimetype.split('/')[-1]
+        photoId = "photo_" + __get_random_id()
 
-    if current_user in users:
-        users.remove(current_user)
+        if extension not in ['jpeg', 'jpg', 'png', 'bmp']:
+            return HTTPResponse(status=400, body="Unsupported file type")
+        if upload:
+            file_path = f"./storage/{photoId}." + extension
+            upload.save(file_path)
 
-    photo = {}
-    photo["photoId"] = photoId
-    photo["url"] = "~/storage/" + photoId + "." + extension
-    photo["oridinal"] = len(current_user["photos"])
-    current_user["photos"].append(photo)
-    users.append(current_user)
-    return photo
+        if current_user in users:
+            users.remove(current_user)
+
+        photo = {}
+        photo["photoId"] = photoId
+        photo["url"] = "~/storage/" + photoId + "." + extension
+        photo["oridinal"] = len(current_user["photos"])
+        current_user["photos"].append(photo)
+        users.append(current_user)
+        return photo
+    return HTTPResponse(status=500)
 
 @app.route('/photos/<photoId>', 'PATCH')
 @isAuthorized
@@ -320,8 +322,8 @@ def like_user(userId):
 
     match = {}
     match["matchId"] = "match_" + __get_random_id()
-    match["user"] = current_user
-    match["user1"] = __search(users, "userId", userId)[0]
+    match["user"] = __search(users, "userId", userId)[0]
+    match["user1"] = current_user
     match["messages"] = []
     match["createdAt"] = datetime.now().isoformat()
     matches.append(match)
