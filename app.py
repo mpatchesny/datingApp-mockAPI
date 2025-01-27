@@ -289,7 +289,7 @@ def get_messages(matchId):
         d["page"] = page
         d["pageSize"] = pageSize
         d["pageCount"] = recordsCount // pageSize
-        d["data"] = messages[start, end]
+        d["data"] = messages[start:end]
         return d
     return HTTPResponse(status=404)
 
