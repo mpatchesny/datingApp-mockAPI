@@ -266,7 +266,6 @@ def get_messages(matchId):
     return HTTPResponse(status=404)
 
 @app.route('/matches/<matchId>', 'POST')
-@app.route('/matches/<matchId>', 'POST')
 @isAuthorized
 def send_message(matchId):
     found = __search(matches, "matchId", matchId)
