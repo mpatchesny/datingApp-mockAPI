@@ -1,36 +1,40 @@
+import os
 import json
 import random
+import requests
+import datetime
 
 from bottle import Bottle, run, request, HTTPResponse
+from bottle import static_file
 
 from generator import generate
-import datetime
 
 app = Bottle()
 
-@app.route('/')
-def hello():
-    return "Witaj, świecie!"
 
 def isAuthorized(func):
     def wrapper(*args, **kwargs):
         if not current_user:
-            err = {"code": "Unauthorized exception", "reason": "You don't have permission to perform this action"}
+            err = {"code": "Unauthorized", "reason": "You don't have permission to perform this action"}
             return HTTPResponse(err, status=403)
         return func(*args, **kwargs)
     return wrapper
 
+@app.route('/api')
+def hello():
+    return "datingApp Mock API"
+
 ### AUTH
 
-@app.route('/auth', 'POST')
+@app.route('/users/auth', 'POST')
 def request_access_code():
-    body = json.loads(request.body)
+    body = json.loads(request.body.getvalue())
     email = body["email"]
     return {"email": email}
 
-@app.route('/sign-in', 'POST')
+@app.route('/users/sign-in', 'POST')
 def login():
-    body = json.loads(request.body)
+    body = json.loads(request.body.getvalue())
     email = body["email"]
     found = __search(users, "email", email);
     if found != []:
@@ -44,7 +48,7 @@ def login():
         d["refreshToken"] = { "token": refresh_token, "expirationTime": refresh_token_exp_time}
         return d
 
-@app.route('/auth/refresh', 'POST')
+@app.route('/users/auth/refresh', 'POST')
 @isAuthorized
 def refresh_access_code():
     access_token = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
@@ -68,20 +72,19 @@ def get_user(userId):
 
 @app.route('/users', 'POST')
 def post_user():
-    body = json.loads(request.body)
+    body = json.loads(request.body.getvalue())
     new_user = {}
-    for field in ["Name", "Phone", "Email", "Sex", "DateOfBirth", "Bio", "Job"]:
+    new_user["userId"] = "user_" + __get_random_id()
+    for field in ["name", "phone", "email", "sex", "dateOfBirth", "bio", "job"]:
         if body.get(field):
             new_user[field] = body[field]
     settings = {}
-    for field in ["PreferredSex"]:
-        if body.get(field):
-            settings[field] = body[field]
-    settings["PreferredAgeFrom"] = 18
-    settings["PreferredAgeTo"] = 99
-    settings["PreferredMaxDistance"] = 100
-    settings["Lat"] = 0.0
-    settings["Lon"] = 0.0
+    settings["preferredSex"] = body["preferredSex"]
+    settings["preferredAgeFrom"] = 18
+    settings["preferredAgeTo"] = 99
+    settings["preferredMaxDistance"] = 100
+    settings["lat"] = 0.0
+    settings["lon"] = 0.0
     new_user["settings"] = settings
     new_user["photos"] = []
     users.append(new_user)
@@ -92,11 +95,11 @@ def post_user():
 def patch_user(userId):
     if current_user in users:
         users.remove(current_user)
-    body = json.loads(request.body)
-    for field in ["DateOfBirth", "Bio", "Job"]:
+    body = json.loads(request.body.getvalue())
+    for field in ["dateOfBirth", "bio", "job"]:
         if body.get(field):
             current_user[field] = body[field]
-    for field in ["PreferredAgeFrom", "PreferredAgeTo", "PreferredMaxDistance", "PreferredSex", "Lat", "Lon"]:
+    for field in ["preferredAgeFrom", "preferredAgeTo", "preferredMaxDistance", "preferredSex", "lat", "lon"]:
         if body.get(field):
             current_user["settings"][field] = body[field]
 
@@ -133,16 +136,29 @@ def get_recommendations():
         if len(recommendations) >= 10:
             break
 
-    return recommendations
+    response = json.dumps(recommendations)
+    return response
 
 @app.route('/users/me/photos', 'POST')
 @isAuthorized
 def add_photo():
+    upload = request.files.get('file')
+    mimetype = upload.content_type
+    extension = mimetype.split('/')[-1]
+    photoId = "photo_" + __get_random_id()
+
+    if extension not in ['jpeg', 'jpg', 'png', 'bmp']:
+        return HTTPResponse(status=400, body="Unsupported file type")
+    if upload:
+        file_path = f"./storage/{photoId}." + extension
+        upload.save(file_path)
+
     if current_user in users:
         users.remove(current_user)
+
     photo = {}
-    photo["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
-    photo["url"] = "~/" + photo["photoId"] + ".jpg"
+    photo["photoId"] = photoId
+    photo["url"] = "~/storage/" + photoId + "." + extension
     photo["oridinal"] = len(current_user["photos"])
     current_user["photos"].append(photo)
     users.append(current_user)
@@ -155,7 +171,7 @@ def add_photo():
 def patch_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
     if found != []:
-        body = json.loads(request.body)
+        body = json.loads(request.body.getvalue())
         newOridinal = int(body["newOridinal"])
         found[0]["oridinal"] = newOridinal
         return HTTPResponse(status=201)
@@ -167,6 +183,9 @@ def delete_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
     if found != []:
         current_user["photos"].remove(found[0])
+        path = './' + found[0].url.strip("~/")
+        if os.path.exists(path):
+            os.remove(path)
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
@@ -250,13 +269,13 @@ def get_messages(matchId):
     return HTTPResponse(status=404)
 
 @app.route('/matches/<matchId>', 'POST')
-@app.route('/matches/<matchId>', 'POST')
 @isAuthorized
 def send_message(matchId):
     found = __search(matches, "matchId", matchId)
     if found != []:
-        body = json.loads(request.body)
+        body = json.loads(request.body.getvalue())
         msg = {} 
+        msg["messageId"] = "match_" + __get_random_id()
         msg["sendFromUserId"] = current_user["userId"]
         msg["text"] = body["text"]
         msg["createdAt"] = datetime.datetime.now().isoformat()
@@ -276,17 +295,14 @@ def like_user(userId):
     swipe["createdAt"] = datetime.datetime.now().isoformat()
     swipes.append(swipe)
 
-    found = __search(swipes, "swipedById", userId)
-    isLikedByOtherUser = False
-    if found != []:
-        match = {}
-        match["matchId"] = ""
-        match["user"] = current_user["userId"]
-        match["user1"] = userId
-        match["messages"] = []
-        match["createdAt"] = datetime.datetime.now().isoformat()
-        matches.append(match)
-        isLikedByOtherUser = True
+    match = {}
+    match["matchId"] = "match_" + __get_random_id()
+    match["user"] = current_user["userId"]
+    match["user1"] = userId
+    match["messages"] = []
+    match["createdAt"] = datetime.datetime.now().isoformat()
+    matches.append(match)
+    isLikedByOtherUser = True
     return { "isLikedByOtherUser": isLikedByOtherUser }
 
 @app.route('/pass/<userId>', 'PUT')
@@ -300,6 +316,19 @@ def pass_user(userId):
     swipes.append(swipe)
     return { "isLikedByOtherUser": False }
 
+@app.route('/storage/<filename:path>')
+def serve_static(filename):
+    file_path = f"./storage/{filename}"
+    if not os.path.exists(file_path):
+        response = requests.get("https://thispersondoesnotexist.com")
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+    return static_file(filename, root='./storage')
+
+def __get_random_id():
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+
 def __search(list, field_name, value):
     found = []
     for item in list:
@@ -307,10 +336,13 @@ def __search(list, field_name, value):
             found.append(item)
     return found
 
+
 if __name__ == '__main__':
     users, matches, swipes = generate(1000, 200)
     globals()["users"] = users
     globals()["matches"] = matches
     globals()["swipes"] = swipes
     globals()["current_user"] = None
+    if not os.path.exists('./storage'):
+        os.mkdir('./storage')
     run(app, host='localhost', port=8080)

@@ -96,10 +96,10 @@ def generate_random_match(user1, user2):
     d["createdAt"] = random_datetime().isoformat()
     return d
 
-def generate_random_photo(oridinal):
+def generate_random_photo(oridinal, sex):
     d = {}
     d["photoId"] = "photo_" + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
-    d["url"] = "~/" + d["photoId"] + ".jpg"
+    d["url"] = f'~/storage/{d["photoId"]}.jpg'
     d["oridinal"] = oridinal
     return d
 
@@ -128,7 +128,7 @@ def generate_random_user():
     d["sex"] = random.choice([1, 2])
     photos = []
     for i in range(0, random.randrange(0, 6)):
-        photos.append(generate_random_photo(i+1))
+        photos.append(generate_random_photo(i+1, d["sex"]))
     d["photos"] = photos
     d["distanceInKms"] = random.randrange(0, 250)
     dob = random_date()
