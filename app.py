@@ -1,8 +1,9 @@
 import os
 import json
 import random
+import dateutil
 import requests
-import datetime
+from datetime import datetime, timedelta
 
 from bottle import Bottle, run, request, HTTPResponse
 from bottle import static_file
@@ -14,9 +15,27 @@ app = Bottle()
 
 def isAuthorized(func):
     def wrapper(*args, **kwargs):
+        current_user = None
+
+        auth_header = request.get_header("Authorization")
+        provided_token = ""
+        if auth_header:
+            provided_token = auth_header.split("Bearer ")[1]
+
+        for token in tokens:
+            if token["accessToken"]["token"] == provided_token:
+                exp_time = dateutil.parser.isoparse(token["accessToken"]["expirationTime"])
+                if exp_time >= datetime.now():
+                    for user in users:
+                        if provided_token.find(user["userId"]) >= 0:
+                            current_user = user
+                            globals()["current_user"] = current_user
+                            break
+
         if not current_user:
             err = {"code": "Unauthorized", "reason": "You don't have permission to perform this action"}
             return HTTPResponse(err, status=403)
+
         return func(*args, **kwargs)
     return wrapper
 
@@ -39,25 +58,27 @@ def login():
     found = __search(users, "email", email);
     if found != []:
         globals()["current_user"] = found[0]
-        access_token = __get_random_id()
-        access_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()
-        refresh_token = __get_random_id()
-        refresh_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=90)).isoformat()
+        access_token = found[0]["userId"] + "_" + __get_random_id()
+        access_token_exp_time = (datetime.now() + timedelta(days=7)).isoformat()
+        refresh_token = found[0]["userId"] + "_" +__get_random_id()
+        refresh_token_exp_time = (datetime.now() + timedelta(days=90)).isoformat()
         d = {}
         d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
         d["refreshToken"] = { "token": refresh_token, "expirationTime": refresh_token_exp_time}
+        tokens.append(d)
         return d
 
 @app.route('/users/auth/refresh', 'POST')
 @isAuthorized
 def refresh_access_code():
     access_token = __get_random_id()
-    access_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()
+    access_token_exp_time = (datetime.now() + timedelta(days=7)).isoformat()
     refresh_token = __get_random_id()
-    refresh_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=90)).isoformat()
+    refresh_token_exp_time = (datetime.now() + timedelta(days=90)).isoformat()
     d = {}
     d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
     d["refreshToken"] = { "token": refresh_token, "expirationTime": refresh_token_exp_time}
+    tokens.append(d)
     return d
 
 ### USERS
@@ -95,6 +116,7 @@ def post_user():
 def patch_user(userId):
     if current_user in users:
         users.remove(current_user)
+
     body = json.loads(request.body.getvalue())
     for field in ["dateOfBirth", "bio", "job"]:
         if body.get(field):
@@ -278,7 +300,7 @@ def send_message(matchId):
         msg["messageId"] = "match_" + __get_random_id()
         msg["sendFromUserId"] = current_user["userId"]
         msg["text"] = body["text"]
-        msg["createdAt"] = datetime.datetime.now().isoformat()
+        msg["createdAt"] = datetime.now().isoformat()
         found[0]["messages"].append(msg)
         return msg
     return HTTPResponse(status=404)
@@ -292,15 +314,15 @@ def like_user(userId):
     swipe["swipedById"] = current_user["userId"]
     swipe["swipedWhoId"] = userId
     swipe["like"] = 2
-    swipe["createdAt"] = datetime.datetime.now().isoformat()
+    swipe["createdAt"] = datetime.now().isoformat()
     swipes.append(swipe)
 
     match = {}
     match["matchId"] = "match_" + __get_random_id()
-    match["user"] = current_user["userId"]
-    match["user1"] = userId
+    match["user"] = current_user
+    match["user1"] = __search(users, "userId", userId)[0]
     match["messages"] = []
-    match["createdAt"] = datetime.datetime.now().isoformat()
+    match["createdAt"] = datetime.now().isoformat()
     matches.append(match)
     isLikedByOtherUser = True
     return { "isLikedByOtherUser": isLikedByOtherUser }
@@ -312,7 +334,7 @@ def pass_user(userId):
     swipe["swipedById"] = current_user["userId"]
     swipe["swipedWhoId"] = userId
     swipe["like"] = 1
-    swipe["createdAt"] = datetime.datetime.now().isoformat()
+    swipe["createdAt"] = datetime.now().isoformat()
     swipes.append(swipe)
     return { "isLikedByOtherUser": False }
 
@@ -336,13 +358,57 @@ def __search(list, field_name, value):
             found.append(item)
     return found
 
+def __load_data():
+    if os.path.exists('./data/users.json'):
+        with open('./data/users.json', 'r', encoding='utf-8') as f:
+            users = json.load(f)
+    else:
+        users, _, _ = generate(1000, 0)
+
+    if os.path.exists('./data/matches.json'):
+        with open('./data/matches.json', 'r', encoding='utf-8') as f:
+            matches = json.load(f)
+    else:
+        matches = []
+
+    if os.path.exists('./data/swipes.json'):
+        with open('./data/swipes.json', 'r', encoding='utf-8') as f:
+            swipes = json.load(f)
+    else:
+        swipes = []
+
+    if os.path.exists('./data/tokens.json'):
+        with open('./data/tokens.json', 'r', encoding='utf-8') as f:
+            tokens = json.load(f)
+    else:
+        tokens = []
+
+    return users, matches, swipes, tokens
+
+def __dump():
+    if not os.path.exists('./data'):
+        os.mkdir('./data')
+    with open('./data/users.json', 'w', encoding='utf-8') as f:
+        json.dump(users, f)
+    with open('./data/matches.json', 'w', encoding='utf-8') as f:
+        json.dump(matches, f)
+    with open('./data/swipes.json', 'w', encoding='utf-8') as f:
+        json.dump(swipes, f)
+    with open('./data/tokens.json', 'w', encoding='utf-8') as f:
+        json.dump(tokens, f)
 
 if __name__ == '__main__':
-    users, matches, swipes = generate(1000, 200)
+    users, matches, swipes, tokens = __load_data()
+
     globals()["users"] = users
     globals()["matches"] = matches
     globals()["swipes"] = swipes
-    globals()["current_user"] = None
+    globals()["tokens"] = tokens
+    # globals()["current_user"] = None
+
     if not os.path.exists('./storage'):
         os.mkdir('./storage')
+
     run(app, host='localhost', port=8080)
+
+    __dump()
