@@ -292,17 +292,14 @@ def like_user(userId):
     swipe["createdAt"] = datetime.datetime.now().isoformat()
     swipes.append(swipe)
 
-    found = __search(swipes, "swipedById", userId)
-    isLikedByOtherUser = False
-    if found != []:
-        match = {}
-        match["matchId"] = ""
-        match["user"] = current_user["userId"]
-        match["user1"] = userId
-        match["messages"] = []
-        match["createdAt"] = datetime.datetime.now().isoformat()
-        matches.append(match)
-        isLikedByOtherUser = True
+    match = {}
+    match["matchId"] = ""
+    match["user"] = current_user["userId"]
+    match["user1"] = userId
+    match["messages"] = []
+    match["createdAt"] = datetime.datetime.now().isoformat()
+    matches.append(match)
+    isLikedByOtherUser = True
     return { "isLikedByOtherUser": isLikedByOtherUser }
 
 @app.route('/pass/<userId>', 'PUT')
