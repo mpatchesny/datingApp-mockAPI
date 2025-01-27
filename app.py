@@ -161,6 +161,8 @@ def get_recommendations():
     response = json.dumps(recommendations)
     return response
 
+### PHOTOS
+
 @app.route('/users/me/photos', 'POST')
 @isAuthorized
 def add_photo():
@@ -185,8 +187,6 @@ def add_photo():
     current_user["photos"].append(photo)
     users.append(current_user)
     return photo
-
-### PHOTOS
 
 @app.route('/photos/<photoId>', 'PATCH')
 @isAuthorized
@@ -230,9 +230,10 @@ def get_matches():
             found.append(match)
         if match["user1"]["userId"] == current_user["userId"]:
             found.append(match)
+
     recordsCount = len(found)
     if len(found) > 0:
-        found.sort(key=lambda x: x["createdDate"], reverse=True)
+        found.sort(key=lambda x: x["createdAt"], reverse=True)
 
     page = int(request.query.page) if request.query.page else 1
     pageSize = int(request.query.pageSize) if request.query.pageSize else 25
@@ -275,7 +276,7 @@ def get_messages(matchId):
         messages = found[0]["messages"]
         recordsCount = len(messages)
         if len(messages) > 0:
-            messages.sort(key=lambda x: x["createdDate"], reverse=True)
+            messages.sort(key=lambda x: x["createdAt"], reverse=True)
 
         page = int(request.query.page) if request.query.page else 1
         pageSize = int(request.query.pageSize) if request.query.pageSize else 25
