@@ -39,9 +39,9 @@ def login():
     found = __search(users, "email", email);
     if found != []:
         globals()["current_user"] = found[0]
-        access_token = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+        access_token = __get_random_id()
         access_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()
-        refresh_token = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+        refresh_token = __get_random_id()
         refresh_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=90)).isoformat()
         d = {}
         d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
@@ -51,9 +51,9 @@ def login():
 @app.route('/users/auth/refresh', 'POST')
 @isAuthorized
 def refresh_access_code():
-    access_token = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+    access_token = __get_random_id()
     access_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()
-    refresh_token = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+    refresh_token = __get_random_id()
     refresh_token_exp_time = (datetime.datetime.now() + datetime.timedelta(days=90)).isoformat()
     d = {}
     d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
