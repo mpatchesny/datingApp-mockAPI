@@ -114,6 +114,7 @@ def post_user():
 @app.route('/users/<userId>', 'PATCH')
 @isAuthorized
 def patch_user(userId):
+    current_user = globals().get("current_user")
     if current_user in users:
         users.remove(current_user)
 
@@ -131,6 +132,7 @@ def patch_user(userId):
 @app.route('/users/<userId>', 'DELETE')
 @isAuthorized
 def delete_user(userId):
+    current_user = globals().get("current_user")
     if current_user:
         if current_user in users:
             users.remove(current_user)
@@ -178,6 +180,7 @@ def add_photo():
             file_path = f"./storage/{photoId}." + extension
             upload.save(file_path)
 
+        current_user = globals().get("current_user")
         if current_user in users:
             users.remove(current_user)
 
