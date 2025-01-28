@@ -62,6 +62,7 @@ def enable_cors():
 def hello():
     return "datingApp Mock API"
 
+
 ### AUTH
 
 @app.route('/users/auth', method=['POST', 'OPTIONS'])
@@ -393,6 +394,7 @@ def serve_static(filename):
                 f.write(response.content)
     return static_file(filename, root='./storage')
 
+
 def __get_random_id():
     return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
 
@@ -441,6 +443,7 @@ def __dump():
         json.dump(swipes, f)
     with open('./data/tokens.json', 'w', encoding='utf-8') as f:
         json.dump(tokens, f)
+
 
 if __name__ == '__main__':
     users, matches, swipes, tokens = __load_data()
