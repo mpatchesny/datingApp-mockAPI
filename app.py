@@ -39,6 +39,14 @@ def isAuthorized(func):
         return func(*args, **kwargs)
     return wrapper
 
+def corsOptionsWrapper(func):
+    def wrapper(*args, **kwargs):
+        if (request.method == 'OPTIONS'):
+            return HTTPResponse(status=200)
+        else:
+            return func(*args, **kwargs)
+    return wrapper
+
 # https://gist.github.com/richard-flosi/3789163
 @app.hook('after_request')
 def enable_cors():
@@ -47,7 +55,7 @@ def enable_cors():
     Don't use the wildcard '*' for Access-Control-Allow-Origin in production.
     """
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, PATCH, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
 
 @app.route('/api')
@@ -56,13 +64,15 @@ def hello():
 
 ### AUTH
 
-@app.route('/users/auth', 'POST')
+@app.route('/users/auth', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 def request_access_code():
     body = json.loads(request.body.getvalue())
     email = body["email"]
     return {"email": email}
 
-@app.route('/users/sign-in', 'POST')
+@app.route('/users/sign-in', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 def login():
     body = json.loads(request.body.getvalue())
     email = body["email"]
@@ -79,7 +89,8 @@ def login():
         tokens.append(d)
         return d
 
-@app.route('/users/auth/refresh', 'POST')
+@app.route('/users/auth/refresh', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def refresh_access_code():
     access_token = __get_random_id()
@@ -94,7 +105,8 @@ def refresh_access_code():
 
 ### USERS
 
-@app.route('/users/<userId>', 'GET')
+@app.route('/users/<userId>', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_user(userId):
     found = __search(users, "userId", userId)
@@ -102,7 +114,8 @@ def get_user(userId):
         return found[0]
     return HTTPResponse(status=404)
 
-@app.route('/users', 'POST')
+@app.route('/users', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 def post_user():
     body = json.loads(request.body.getvalue())
     new_user = {}
@@ -122,7 +135,8 @@ def post_user():
     users.append(new_user)
     return new_user
 
-@app.route('/users/<userId>', 'PATCH')
+@app.route('/users/<userId>', method=['PATCH', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def patch_user(userId):
     current_user = globals().get("current_user")
@@ -140,7 +154,8 @@ def patch_user(userId):
     users.append(current_user)
     return HTTPResponse(status=201)
 
-@app.route('/users/<userId>', 'DELETE')
+@app.route('/users/<userId>', method=['DELETE', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def delete_user(userId):
     current_user = globals().get("current_user")
@@ -151,12 +166,14 @@ def delete_user(userId):
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
-@app.route('/users/me', 'GET')
+@app.route('/users/me', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_me():
     return current_user
 
-@app.route('/users/me/recommendations', 'GET')
+@app.route('/users/me/recommendations', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_recommendations():
     recommendations = []
@@ -176,7 +193,8 @@ def get_recommendations():
 
 ### PHOTOS
 
-@app.route('/users/me/photos', 'POST')
+@app.route('/users/me/photos', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def add_photo():
     upload = request.files.get('file')
@@ -204,7 +222,8 @@ def add_photo():
         return photo
     return HTTPResponse(status=500)
 
-@app.route('/photos/<photoId>', 'PATCH')
+@app.route('/photos/<photoId>', method=['PATCH', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def patch_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
@@ -215,7 +234,8 @@ def patch_photo(photoId):
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
-@app.route('/photos/<photoId>', 'DELETE')
+@app.route('/photos/<photoId>', method=['DELETE', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def delete_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
@@ -229,7 +249,8 @@ def delete_photo(photoId):
 
 ### MATCHES
 
-@app.route('/matches/<matchId>', 'GET')
+@app.route('/matches/<matchId>', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_match(matchId):
     found = __search(matches, "matchId", matchId)
@@ -237,7 +258,8 @@ def get_match(matchId):
         return found[0]
     return HTTPResponse(status=404)
 
-@app.route('/matches', 'GET')
+@app.route('/matches', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_matches():
     found = []
@@ -263,7 +285,8 @@ def get_matches():
     d["data"] = found[start:end]
     return d
 
-@app.route('/matches/<matchId>', 'PATCH')
+@app.route('/matches/<matchId>', method=['PATCH', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def set_match_as_displayed(matchId):
     found = __search(matches, "matchId", matchId)
@@ -275,7 +298,8 @@ def set_match_as_displayed(matchId):
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
-@app.route('/matches/<matchId>', 'DELETE')
+@app.route('/matches/<matchId>', method=['DELETE', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def delete_match(matchId):
     found = __search(matches, "matchId", matchId)
@@ -284,7 +308,8 @@ def delete_match(matchId):
         return HTTPResponse(status=201)
     return HTTPResponse(status=404)
 
-@app.route('/matches/<matchId>/messages', 'GET')
+@app.route('/matches/<matchId>/messages', method=['GET', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def get_messages(matchId):
     found = __search(matches, "matchId", matchId)
@@ -307,7 +332,8 @@ def get_messages(matchId):
         return d
     return HTTPResponse(status=404)
 
-@app.route('/matches/<matchId>', 'POST')
+@app.route('/matches/<matchId>', method=['POST', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def send_message(matchId):
     found = __search(matches, "matchId", matchId)
@@ -324,7 +350,8 @@ def send_message(matchId):
 
 ### PASS/LIKE
 
-@app.route('/like/<userId>', 'PUT')
+@app.route('/like/<userId>', method=['PUT', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def like_user(userId):
     swipe = {}
@@ -344,7 +371,8 @@ def like_user(userId):
     isLikedByOtherUser = True
     return { "isLikedByOtherUser": isLikedByOtherUser }
 
-@app.route('/pass/<userId>', 'PUT')
+@app.route('/pass/<userId>', method=['PUT', 'OPTIONS'])
+@corsOptionsWrapper
 @isAuthorized
 def pass_user(userId):
     swipe = {}
