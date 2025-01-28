@@ -5,7 +5,7 @@ import dateutil
 import requests
 from datetime import datetime, timedelta
 
-from bottle import Bottle, run, request, HTTPResponse
+from bottle import Bottle, run, request, HTTPResponse, response, run
 from bottle import static_file
 
 from generator import generate
@@ -38,6 +38,17 @@ def isAuthorized(func):
 
         return func(*args, **kwargs)
     return wrapper
+
+# https://gist.github.com/richard-flosi/3789163
+@app.hook('after_request')
+def enable_cors():
+    """
+    You need to add some headers to each request.
+    Don't use the wildcard '*' for Access-Control-Allow-Origin in production.
+    """
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
 
 @app.route('/api')
 def hello():
