@@ -198,7 +198,7 @@ def get_recommendations():
 @corsOptionsWrapper
 @isAuthorized
 def add_photo():
-    upload = request.files.get('file')
+    upload = request.files.get('fileKey')
     if upload:
         mimetype = upload.content_type
         extension = mimetype.split('/')[-1]
@@ -242,7 +242,7 @@ def delete_photo(photoId):
     found = __search(current_user["photos"], "photoId", photoId)
     if found != []:
         current_user["photos"].remove(found[0])
-        path = './' + found[0].url.strip("~/")
+        path = './' + found[0]["url"].strip("~/")
         if os.path.exists(path):
             os.remove(path)
         return HTTPResponse(status=201)
