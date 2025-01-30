@@ -92,17 +92,20 @@ def login():
 
 @app.route('/users/auth/refresh', method=['POST', 'OPTIONS'])
 @corsOptionsWrapper
-@isAuthorized
 def refresh_access_code():
-    access_token = __get_random_id()
-    access_token_exp_time = (datetime.now() + timedelta(days=7)).isoformat()
-    refresh_token = __get_random_id()
-    refresh_token_exp_time = (datetime.now() + timedelta(days=90)).isoformat()
-    d = {}
-    d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
-    d["refreshToken"] = { "token": refresh_token, "expirationTime": refresh_token_exp_time}
-    tokens.append(d)
-    return d
+    body = json.loads(request.body.getvalue())
+    token = body.get("refreshToken")
+    if token:
+        access_token = __get_random_id()
+        access_token_exp_time = (datetime.now() + timedelta(days=7)).isoformat()
+        refresh_token = __get_random_id()
+        refresh_token_exp_time = (datetime.now() + timedelta(days=90)).isoformat()
+        d = {}
+        d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
+        d["refreshToken"] = { "token": refresh_token, "expirationTime": refresh_token_exp_time}
+        tokens.append(d)
+        return d
+    return HTTPResponse(status=400)
 
 ### USERS
 
