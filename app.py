@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import hashlib
 import dateutil
 import requests
 from datetime import datetime, timedelta
@@ -214,6 +215,13 @@ def add_photo():
             upload.save(file_path)
 
         current_user = globals().get("current_user")
+
+        checksum = __calculate_checksum(file_path)
+        for photo in current_user["photos"]:
+            local_path = photo["url"].replace("~", ".")
+            if __calculate_checksum(local_path) == checksum:
+                return HTTPResponse(status=400, body="Photo already exists for this user.")
+
         if current_user in users:
             users.remove(current_user)
 
@@ -221,6 +229,7 @@ def add_photo():
         photo["photoId"] = photoId
         photo["url"] = "~/storage/" + photoId + "." + extension
         photo["oridinal"] = len(current_user["photos"])
+        photo["checksum"] = checksum
         current_user["photos"].append(photo)
         users.append(current_user)
         return photo
@@ -407,6 +416,16 @@ def __search(list, field_name, value):
         if item[field_name] == value:
             found.append(item)
     return found
+
+def __calculate_checksum(path):
+    md5 = hashlib.md5()
+    with open(path, 'rb') as f:
+        while True:
+            buffer = f.read(65536)
+            if not buffer:
+                break
+            md5.update(buffer)
+    return md5.hexdigest()
 
 def __load_data():
     if os.path.exists('./data/users.json'):
