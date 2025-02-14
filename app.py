@@ -21,7 +21,9 @@ def isAuthorized(func):
         auth_header = request.get_header("Authorization")
         provided_token = ""
         if auth_header:
-            provided_token = auth_header.split("Bearer ")[1]
+            tmp = auth_header.split("Bearer ")
+            if len(tmp) == 2:
+                provided_token = tmp[1]
 
         for token in tokens:
             if token["accessToken"]["token"] == provided_token:
@@ -35,7 +37,7 @@ def isAuthorized(func):
 
         if not current_user:
             err = {"code": "Unauthorized", "reason": "You don't have permission to perform this action"}
-            return HTTPResponse(err, status=403)
+            return HTTPResponse(err, status=401)
 
         return func(*args, **kwargs)
     return wrapper
@@ -97,9 +99,9 @@ def refresh_access_code():
     body = json.loads(request.body.getvalue())
     token = body.get("refreshToken")
     if token:
-        access_token = __get_random_id()
+        access_token = current_user["userId"] + "_" + __get_random_id()
         access_token_exp_time = (datetime.now() + timedelta(days=7)).isoformat()
-        refresh_token = __get_random_id()
+        refresh_token = current_user["userId"] + "_" + __get_random_id()
         refresh_token_exp_time = (datetime.now() + timedelta(days=90)).isoformat()
         d = {}
         d["accessToken"] = { "token": access_token, "expirationTime": access_token_exp_time}
