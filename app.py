@@ -347,7 +347,7 @@ def get_messages(matchId):
         return d
     return HTTPResponse(status=404)
 
-@app.route('/matches/<matchId>', method=['POST', 'OPTIONS'])
+@app.route('/matches/<matchId>/messages', method=['POST', 'OPTIONS'])
 @corsOptionsWrapper
 @isAuthorized
 def send_message(matchId):
